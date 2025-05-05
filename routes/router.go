@@ -14,5 +14,6 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/api/v1/register", controllers.Register).Methods("POST")
 	r.HandleFunc("/api/v1/login", controllers.Login).Methods("POST")
 	r.HandleFunc("/api/v1/logout", controllers.Logout).Methods("POST")
+	r.HandleFunc("/api/v1/verify-otp", controllers.Verify).Methods("POST")
 	return r
 }

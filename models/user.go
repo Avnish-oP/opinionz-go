@@ -15,7 +15,8 @@ type User struct {
 	Contact     string `gorm:"not null" json:"contact"`
 	OTP         string
 	OTPExpiry   time.Time
-	Role        string
+	Verified    bool   `gorm:"default:false"`
+	Role        string `gorm:"default:'user'"`
 	CreatedAt   time.Time
 	ResetToken  string
 	ResetExpiry time.Time
