@@ -27,7 +27,16 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	var input models.User
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		fmt.Println("Error decoding JSON:", err)
 		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+	userExists := config.DB.Where("email = ?", input.Email).First(&models.User{}).RowsAffected
+	if userExists > 0 {
+		response.Message = "User already exists"
+		response.Success = false
+		response.Data = nil
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -43,6 +52,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		OTP:       otp,
 		OTPExpiry: time.Now().Add(15 * time.Minute),
 		CreatedAt: time.Now(),
+		Interests: input.Interests,
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {

@@ -21,6 +21,8 @@ func LoadEnv() {
 
 func ConnectDB() {
 	LoadEnv()
+	fmt.Println("Connecting to database...")
+	fmt.Println("DB_HOST:", os.Getenv("DB_PASSWORD"))
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_USER"),

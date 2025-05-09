@@ -2,8 +2,10 @@ package routes
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/Avnish-oP/opinionz/controllers"
+	"github.com/Avnish-oP/opinionz/middlewares"
 	"github.com/gorilla/mux"
 )
 
@@ -15,5 +17,6 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/api/v1/login", controllers.Login).Methods("POST")
 	r.HandleFunc("/api/v1/logout", controllers.Logout).Methods("POST")
 	r.HandleFunc("/api/v1/verify-otp", controllers.Verify).Methods("POST")
+	r.Handle("/api/v1/create-post", middlewares.AuthMiddleware(http.HandlerFunc(controllers.CreatePost))).Methods("POST")
 	return r
 }
