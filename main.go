@@ -7,14 +7,12 @@ import (
 	"os"
 
 	"github.com/Avnish-oP/opinionz/config"
-	"github.com/Avnish-oP/opinionz/models"
 	"github.com/Avnish-oP/opinionz/routes"
 )
 
 func main() {
 	config.LoadEnv()
-	config.ConnectDB()
-	config.DB.AutoMigrate(&models.User{}, &models.Post{})
+	config.ConnectMongoDB() // Connect to MongoDB
 
 	r := routes.SetupRoutes()
 	port := os.Getenv("PORT")
@@ -23,5 +21,4 @@ func main() {
 	}
 	fmt.Println("Server is running on port:", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
-
 }

@@ -24,23 +24,23 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract userID from the context
 	cookie, err := r.Cookie("token")
 	if err != nil {
-		http.Error(w, "cookie not found", http.StatusUnauthorized)
+		http.Error(w, "no cookies found", http.StatusUnauthorized)
 		return
 	}
 	tokenString := cookie.Value
-	userID, err := utils.ValidateJWT(tokenString)
-	if err != nil {
-		http.Error(w, "can't get userid", http.StatusUnauthorized)
-		return
-	}
 
-	fmt.Println("User ID from context:", userID)
-	if userID == "" {
+	fmt.Println("Token from cookie:", tokenString)
+	userID, err := utils.ValidateJWT(tokenString)
+	if err != nil || userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+
+	userIDStr := userID
+	fmt.Println("User ID from post token:", userIDStr)
 
 	var input models.Post
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -49,12 +49,14 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set the userID for the post
-	input.UserID = userID
-	input.PostID = uuid.New().String()
+	input.UserID = userIDStr
+	input.ID = uuid.New().String()
 	input.CreatedAt = time.Now()
 
-	// Save the post to the database
-	if err := config.DB.Create(&input).Error; err != nil {
+	// Save the post to MongoDB
+	collection := config.MongoDB.Collection("posts")
+	_, err = collection.InsertOne(r.Context(), input)
+	if err != nil {
 		response := PostResponse{
 			Message: "Error creating post",
 			Success: false,

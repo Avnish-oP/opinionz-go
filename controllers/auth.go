@@ -31,8 +31,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
-	userExists := config.DB.Where("email = ?", input.Email).First(&models.User{}).RowsAffected
-	if userExists > 0 {
+
+	// Check if the user already exists in MongoDB
+	collection := config.MongoDB.Collection("users")
+	var existingUser models.User
+	err := collection.FindOne(r.Context(), map[string]interface{}{"email": input.Email}).Decode(&existingUser)
+	if err == nil {
 		response.Message = "User already exists"
 		response.Success = false
 		response.Data = nil
@@ -40,9 +44,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hash the password and generate OTP
 	hashedPassword, _ := utils.HashPassword(input.Password)
 	otp := utils.GenerateOTP()
 	fmt.Println("Generated OTP:", otp)
+
 	user := models.User{
 		UserID:    uuid.New().String(),
 		Email:     input.Email,
@@ -55,7 +61,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		Interests: input.Interests,
 	}
 
-	if err := config.DB.Create(&user).Error; err != nil {
+	// Insert the user into MongoDB
+	_, err = collection.InsertOne(r.Context(), user)
+	if err != nil {
 		response.Message = "Error creating user"
 		response.Success = false
 		response.Data = nil
@@ -63,6 +71,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Send OTP via email
 	go utils.SendEmail(user.Email, otp)
 
 	w.WriteHeader(http.StatusCreated)
@@ -79,21 +88,28 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input models.User
-	var user models.User
-
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
 
-	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+	// Query MongoDB for the user
+	collection := config.MongoDB.Collection("users")
+	var user models.User
+	err := collection.FindOne(r.Context(), map[string]interface{}{"email": input.Email}).Decode(&user)
+	if err != nil {
 		response.Message = "User not found"
 		response.Success = false
 		response.Data = nil
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	// Check if the user is verified
 	if !user.Verified {
 		response.Message = "User not verified"
 		response.Success = false
@@ -102,6 +118,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate the password
 	if !utils.CheckPasswordHash(input.Password, user.Password) {
 		response.Message = "Invalid password"
 		response.Success = false
@@ -110,6 +127,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate a JWT token
 	token, _ := utils.GenerateJWT(user.UserID)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
@@ -120,6 +138,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
+
 	response.Message = "Login successful"
 	response.Success = true
 	response.Data = user
@@ -132,6 +151,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Clear the token cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",
@@ -139,7 +159,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Unix(0, 0),
+		Expires:  time.Unix(0, 0), // Expire immediately
 	})
 
 	w.WriteHeader(http.StatusOK)
@@ -166,9 +186,11 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
+	collection := config.MongoDB.Collection("users")
 
 	var user models.User
-	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+	err := collection.FindOne(r.Context(), map[string]any{"email": input.Email}).Decode(&user)
+	if err != nil {
 		response.Message = "User not found"
 		response.Success = false
 		response.Data = nil
@@ -189,8 +211,9 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 	user.Verified = true
 	user.OTP = "" // Clear OTP after verification
 	user.OTPExpiry = time.Time{}
-	if err := config.DB.Save(&user).Error; err != nil {
-		response.Message = "Error verifying user"
+	_, err = collection.UpdateOne(r.Context(), map[string]any{"email": input.Email}, map[string]any{"$set": user})
+	if err != nil {
+		response.Message = "Error updating user"
 		response.Success = false
 		response.Data = nil
 		json.NewEncoder(w).Encode(response)

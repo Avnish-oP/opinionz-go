@@ -1,17 +1,15 @@
 package models
 
-import (
-	"time"
-)
+import "time"
 
 type Post struct {
-	PostID    string    `gorm:"primaryKey" json:"post_id"`
-	UserID    string    `json:"user_id,omitempty"` // optional if anonymous
-	Content   string    `gorm:"not null" json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	Upvotes   int       `json:"upvotes"`
-	Downvotes int       `json:"downvotes"`
-	Tags      []string  `gorm:"type:text[]" json:"tags"` // Use PostgreSQL array type
-	Anonymous bool      `json:"anonymous"`
-	Doodle    string    `json:"doodle,omitempty"` // optional
+	ID        string    `bson:"_id,omitempty" json:"post_id"` // MongoDB uses `_id` as the primary key
+	UserID    string    `bson:"user_id" json:"user_id"`
+	Content   string    `bson:"content" json:"content"`
+	CreatedAt time.Time `bson:"created_at" json:"created_at"`
+	Upvotes   int       `bson:"upvotes" json:"upvotes"`
+	Downvotes int       `bson:"downvotes" json:"downvotes"`
+	Tags      []string  `bson:"tags" json:"tags"`
+	Anonymous bool      `bson:"anonymous" json:"anonymous"`
+	Doodle    string    `bson:"doodle" json:"doodle"`
 }
