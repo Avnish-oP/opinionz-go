@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/Avnish-oP/opinionz/config"
+	"github.com/Avnish-oP/opinionz/middlewares"
 	"github.com/Avnish-oP/opinionz/models"
-	"github.com/Avnish-oP/opinionz/utils"
 	"github.com/google/uuid"
 )
 
@@ -25,16 +25,8 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract userID from the context
-	cookie, err := r.Cookie("token")
-	if err != nil {
-		http.Error(w, "no cookies found", http.StatusUnauthorized)
-		return
-	}
-	tokenString := cookie.Value
-
-	fmt.Println("Token from cookie:", tokenString)
-	userID, err := utils.ValidateJWT(tokenString)
-	if err != nil || userID == "" {
+	userID := r.Context().Value(middlewares.UserIDKey).(string)
+	if userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -55,7 +47,8 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	// Save the post to MongoDB
 	collection := config.MongoDB.Collection("posts")
-	_, err = collection.InsertOne(r.Context(), input)
+
+	_, err := collection.InsertOne(r.Context(), input)
 	if err != nil {
 		response := PostResponse{
 			Message: "Error creating post",

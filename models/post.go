@@ -7,9 +7,11 @@ type Post struct {
 	UserID    string    `bson:"user_id" json:"user_id"`
 	Content   string    `bson:"content" json:"content"`
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
-	Upvotes   int       `bson:"upvotes" json:"upvotes"`
-	Downvotes int       `bson:"downvotes" json:"downvotes"`
 	Tags      []string  `bson:"tags" json:"tags"`
 	Anonymous bool      `bson:"anonymous" json:"anonymous"`
 	Doodle    string    `bson:"doodle" json:"doodle"`
+	Images    []string  `bson:"images" json:"images"`
+	Comments  []Comment `bson:"comments" json:"comments"`
+	Upvotes   []string  `bson:"upvotes_user_ids" json:"upvotes_user_ids"`
+	Downvotes []string  `bson:"downvotes_user_ids" json:"downvotes_user_ids"`
 }

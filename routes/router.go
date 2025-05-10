@@ -18,5 +18,7 @@ func SetupRoutes() *mux.Router {
 	r.HandleFunc("/api/v1/logout", controllers.Logout).Methods("POST")
 	r.HandleFunc("/api/v1/verify-otp", controllers.Verify).Methods("POST")
 	r.Handle("/api/v1/create-post", middlewares.AuthMiddleware(http.HandlerFunc(controllers.CreatePost))).Methods("POST")
+	r.Handle("/api/v1/create-comment", middlewares.AuthMiddleware(http.HandlerFunc(controllers.CreateComment))).Methods("POST")
+	r.Handle("/api/v1/vote", middlewares.AuthMiddleware(http.HandlerFunc(controllers.HandleVote))).Methods("POST")
 	return r
 }

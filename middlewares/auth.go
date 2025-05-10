@@ -10,7 +10,7 @@ import (
 
 type contextKey string
 
-const userIDKey contextKey = "userID"
+const UserIDKey contextKey = "userID"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -20,16 +20,16 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		tokenString := cookie.Value
-		fmt.Println("Token from cookie:", tokenString)
+
 		userID, err := utils.ValidateJWT(tokenString)
 		if err != nil {
+			fmt.Println("Error validating token:", err)
 			http.Error(w, "Unauthorized from middleware2", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		// Log the userID for debugging purposes
-		fmt.Println("User ID from token:", ctx.Value(userIDKey))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
