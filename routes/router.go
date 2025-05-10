@@ -20,5 +20,6 @@ func SetupRoutes() *mux.Router {
 	r.Handle("/api/v1/create-post", middlewares.AuthMiddleware(http.HandlerFunc(controllers.CreatePost))).Methods("POST")
 	r.Handle("/api/v1/create-comment", middlewares.AuthMiddleware(http.HandlerFunc(controllers.CreateComment))).Methods("POST")
 	r.Handle("/api/v1/vote", middlewares.AuthMiddleware(http.HandlerFunc(controllers.HandleVote))).Methods("POST")
+	r.Handle("/api/v1/recommended-posts", middlewares.AuthMiddleware(http.HandlerFunc(controllers.GetRecommendedPosts))).Methods("GET")
 	return r
 }
