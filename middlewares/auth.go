@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Avnish-oP/opinionz/config"
+	"github.com/Avnish-oP/opinionz/models"
 	"github.com/Avnish-oP/opinionz/utils"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type contextKey string
@@ -31,5 +34,26 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		// Log the userID for debugging purposes
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func AdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(UserIDKey).(string)
+		if !ok || userID == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Fetch user details and check role
+		userCollection := config.MongoDB.Collection("users")
+		var user models.User
+		err := userCollection.FindOne(r.Context(), bson.M{"_id": userID}).Decode(&user)
+		if err != nil || user.Role != "admin" {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }
