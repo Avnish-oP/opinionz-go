@@ -12,13 +12,22 @@ import (
 
 var DB *gorm.DB
 
+// func LoadEnv() {
+// 	err := godotenv.Load()
+// 	if err != nil {
+// 		log.Fatal("Error loading .env")
+// 	}
+// }
+
 func LoadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env")
+	// Only load .env if not running on Render
+	if os.Getenv("RENDER") == "" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("Warning: .env file not found, skipping...")
+		}
 	}
 }
-
 func ConnectDB() {
 	LoadEnv()
 	fmt.Println("Connecting to database...")
