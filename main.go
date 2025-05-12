@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/Avnish-oP/opinionz/config"
+	"github.com/Avnish-oP/opinionz/middlewares"
 	"github.com/Avnish-oP/opinionz/routes"
 )
 
@@ -20,5 +21,5 @@ func main() {
 		port = "8080" // Default port if not specified
 	}
 	fmt.Println("Server is running on port:", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Fatal(http.ListenAndServe(":"+port, middlewares.CORS(r))) 
 }
