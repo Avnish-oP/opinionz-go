@@ -97,10 +97,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Login attempt for email:", input.Email)
 	// Query MongoDB for the user
 	collection := config.MongoDB.Collection("users")
 	var user models.User
 	err := collection.FindOne(r.Context(), map[string]interface{}{"email": input.Email}).Decode(&user)
+	fmt.Println("User found:", user)
+	fmt.Println("Error:", err)
 	if err != nil {
 		response.Message = "User not found"
 		response.Success = false

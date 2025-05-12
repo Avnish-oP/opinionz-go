@@ -20,21 +20,73 @@ type PostResponse struct {
 	Data    any    `json:"data"`
 }
 
+// func CreatePost(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodPost {
+// 		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
+// 		return
+// 	}
+
+// 	// Extract userID from the context
+// 	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+// 	if !ok || userID == "" {
+// 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	w.Header().Set("Content-Type", "application/json")
+
+// 	userIDStr := userID
+// 	fmt.Println("User ID from post token:", userIDStr)
+
+// 	var input models.Post
+// 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+// 		http.Error(w, "Invalid body", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	// Set the userID for the post
+// 	input.UserID = userIDStr
+// 	input.ID = uuid.New().String()
+// 	input.CreatedAt = time.Now()
+
+// 	// Save the post to MongoDB
+// 	collection := config.MongoDB.Collection("posts")
+
+// 	_, err := collection.InsertOne(r.Context(), input)
+// 	if err != nil {
+// 		response := PostResponse{
+// 			Message: "Error creating post",
+// 			Success: false,
+// 			Data:    nil,
+// 		}
+// 		json.NewEncoder(w).Encode(response)
+// 		return
+// 	}
+
+// 	// Respond with success
+// 	response := PostResponse{
+// 		Message: "Post created successfully",
+// 		Success: true,
+// 		Data:    input,
+// 	}
+// 	w.WriteHeader(http.StatusCreated)
+// 	json.NewEncoder(w).Encode(response)
+// }
+
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Extract userID from the context
-	userID := r.Context().Value(middlewares.UserIDKey).(string)
-	if userID == "" {
+	userID, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	if !ok || userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	userIDStr := userID
-	fmt.Println("User ID from post token:", userIDStr)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Println("User ID from post token:", userID)
 
 	var input models.Post
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -42,15 +94,25 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the userID for the post
-	input.UserID = userIDStr
+	// Fetch user's doodle link from users collection
+	usersCollection := config.MongoDB.Collection("users")
+	var user models.User
+	err := usersCollection.FindOne(r.Context(), bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		http.Error(w, "Failed to fetch user doodle link", http.StatusInternalServerError)
+		return
+	}
+
+	// Fill in post fields
+	input.UserID = userID
 	input.ID = uuid.New().String()
 	input.CreatedAt = time.Now()
+	input.Doodle = user.Doodle // assuming Post struct has this field
+	fmt.Println("Doodle link:", user.Doodle)
 
-	// Save the post to MongoDB
-	collection := config.MongoDB.Collection("posts")
-
-	_, err := collection.InsertOne(r.Context(), input)
+	// Insert post
+	postsCollection := config.MongoDB.Collection("posts")
+	_, err = postsCollection.InsertOne(r.Context(), input)
 	if err != nil {
 		response := PostResponse{
 			Message: "Error creating post",
@@ -61,7 +123,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with success
+	// Success response
 	response := PostResponse{
 		Message: "Post created successfully",
 		Success: true,
@@ -70,6 +132,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
 }
+
 
 func GetRecommendedPosts(w http.ResponseWriter, r *http.Request) {
 	// Extract userID from the context
