@@ -39,8 +39,18 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 func AdminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(UserIDKey).(string)
-		if !ok || userID == "" {
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			http.Error(w, "Unauthorized from middleware", http.StatusUnauthorized)
+			return
+		}
+		tokenString := cookie.Value
+		userID, err := utils.ValidateJWT(tokenString)
+
+		// userID, ok := r.Context().Value(UserIDKey).(string)
+		// fmt.Println("User ID from context:", userID)
+		if err!=nil || userID == "" {
+			fmt.Println("Error validating token:", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -48,8 +58,8 @@ func AdminMiddleware(next http.Handler) http.Handler {
 		// Fetch user details and check role
 		userCollection := config.MongoDB.Collection("users")
 		var user models.User
-		err := userCollection.FindOne(r.Context(), bson.M{"_id": userID}).Decode(&user)
-		if err != nil || user.Role != "admin" {
+		errr := userCollection.FindOne(r.Context(), bson.M{"_id": userID}).Decode(&user)
+		if errr != nil || user.Role != "admin" {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}

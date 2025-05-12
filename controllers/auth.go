@@ -59,6 +59,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		OTPExpiry: time.Now().Add(15 * time.Minute),
 		CreatedAt: time.Now(),
 		Interests: input.Interests,
+		Doodle:  input.Doodle,
 	}
 
 	// Insert the user into MongoDB

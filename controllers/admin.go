@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Avnish-oP/opinionz/config"
@@ -105,6 +106,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User ID is required", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(userID)
 
 	userCollection := config.MongoDB.Collection("users")
 	_, err := userCollection.DeleteOne(r.Context(), bson.M{"_id": userID})
